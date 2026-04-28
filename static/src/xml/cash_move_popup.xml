@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright 2026 SOPROMER
+    License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+
+    v4 : Comportement scinde
+    - Confirmer (natif, patche)  : impression directe 2x via printer.print
+                                    du composant SopromerCashMoveReceipt (modal HTML)
+    - Imprimer  (nouveau bouton) : aperçu PDF 2 copies via window.open
+-->
+<templates id="template" xml:space="preserve">
+
+    <!-- Inherit du popup pour ajouter le bouton "Imprimer" qui appelle
+         confirmAndPrint (mode aperçu PDF). Place a droite du bouton "Annuler". -->
+    <t t-inherit="point_of_sale.CashMovePopup" t-inherit-mode="extension" owl="1">
+
+        <xpath expr="//button[hasclass('cancel')]" position="after">
+            <button class="button print btn btn-lg lh-lg btn-info sopromer-cash-print-btn"
+                    t-on-click="confirmAndPrint"
+                    t-att-disabled="!isValidCashMove()">
+                <i class="fa fa-print me-1" role="img" aria-label="Imprimer"/>
+                Imprimer
+            </button>
+        </xpath>
+
+    </t>
+
+    <!-- Template du ticket SOPROMER rendu dans la modal d'impression POS
+         (this.printer.print(SopromerCashMoveReceipt)). Largeur ~32 chars,
+         classes pos-receipt standard. Utilise pour le bouton Confirmer (v4). -->
+    <t t-name="sopromer_pos_cash_print.SopromerCashMoveReceipt">
+        <div class="pos-receipt">
+            <div class="pos-receipt-center-align">================================</div>
+            <div class="pos-receipt-center-align" style="font-weight:bold;">
+                <t t-esc="props.companyName"/>
+            </div>
+            <div t-if="props.posName" class="pos-receipt-center-align" style="font-weight:bold;">
+                <t t-esc="props.posName"/>
+            </div>
+            <div class="pos-receipt-center-align">================================</div>
+            <div>Type     : <t t-esc="props.translatedType"/></div>
+            <div>N° Pièce : <t t-esc="props.pieceNumber"/></div>
+            <div>Montant  : <t t-esc="props.formattedAmount"/></div>
+            <div>Motif    : <t t-esc="props.reason"/></div>
+            <div class="pos-receipt-center-align">--------------------------------</div>
+            <div>Session  : <t t-esc="props.sessionName"/></div>
+            <div>Date     : <t t-esc="props.date"/></div>
+            <div>Caissier : <t t-esc="props.cashier"/></div>
+            <div class="pos-receipt-center-align">================================</div>
+            <div class="pos-receipt-center-align" style="font-style:italic;">Signature</div>
+            <br/><br/>
+            <div class="pos-receipt-center-align">================================</div>
+        </div>
+    </t>
+
+</templates>

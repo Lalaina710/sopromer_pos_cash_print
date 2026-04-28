@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 SOPROMER
+    License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+
+    Report PDF du ticket de mouvement de caisse SOPROMER (v3.1 — apercu unique 2 copies).
+
+    Architecture v3.1 :
+    - 1 seul PDF genere contenant 2 copies du ticket (= 2 pages dans le meme PDF).
+    - Le frontend POS appelle 1 seul window.open(/report/pdf/<xmlid>/<line_id>)
+      qui ouvre l'apercu PDF dans un nouvel onglet. Depuis l'apercu, le caissier
+      clique sur l'icone Imprimer du navigateur (Ctrl+P) -> dialog d'impression
+      standard avec previsualisation finale -> imprime 2 feuilles.
+    - Chaque copie est marquee "Copie 1/2" / "Copie 2/2" en bas de page.
+
+    Ordre des records IMPORTANT :
+    1) Paperformat 80mm (declare en premier pour pouvoir etre reference)
+    2) ir.actions.report (referencant le paperformat)
+    3) Template QWeb (referenced par report_name)
+-->
+<odoo>
+
+    <!-- ================================================================
+         1) Paperformat ticket caisse 80mm
+         Format custom "rouleau ticket" tres etroit, similaire ESC/POS.
+         page_height genereux (200mm) pour eviter coupure si beaucoup de
+         contenu. Marges minimales pour maximiser la zone utile.
+         ================================================================ -->
+    <record id="paperformat_cash_ticket" model="report.paperformat">
+        <field name="name">SOPROMER Cash Ticket 80mm</field>
+        <field name="format">custom</field>
+        <field name="page_height">200</field>
+        <field name="page_width">80</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">5</field>
+        <field name="margin_bottom">5</field>
+        <field name="margin_left">3</field>
+        <field name="margin_right">3</field>
+        <field name="header_line">0</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- ================================================================
+         2) Action report : declare l'URL /report/pdf/<xmlid>/<ids>
+         Modele cible : account.bank.statement.line (= la ligne creee
+         par try_cash_in_out, dont l'id est retourne au frontend).
+         binding_model_id=False : pas de bouton "Print" dans le menu
+         d'action de la liste (le report est appele uniquement via URL
+         depuis le POS).
+         ================================================================ -->
+    <record id="action_report_cash_move_ticket" model="ir.actions.report">
+        <field name="name">Ticket Cash Move SOPROMER</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sopromer_pos_cash_print.report_cash_move_ticket_doc</field>
+        <field name="report_file">sopromer_pos_cash_print.report_cash_move_ticket_doc</field>
+        <field name="print_report_name">'Ticket Cash %s' % (object.move_id.name or object.id)</field>
+        <field name="paperformat_id" ref="paperformat_cash_ticket"/>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+    <!-- ================================================================
+         3) Template QWeb du ticket (v3.1 : 2 copies dans 1 PDF)
+         Largeur visuelle ~32 caracteres (police monospace 11px), conforme
+         a l'identite ticket SOPROMER v2.
+
+         Sign convention (verifiee SQL sur 45) :
+         - amount > 0 -> ENTREE caisse (cash in)
+         - amount < 0 -> SORTIE caisse (cash out)
+
+         Affichage du montant : on prend la valeur absolue pour eviter
+         d'afficher un signe "-" devant SORTIE caisse (le libelle suffit).
+
+         v3.1 : pour chaque doc, on rend 2 fois le bloc ticket separe par un
+         saut de page CSS. Le PDF resultant contient 2 pages identiques
+         marquees "Copie 1/2" et "Copie 2/2".
+         ================================================================ -->
+    <template id="report_cash_move_ticket_doc">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+
+                <!-- ===== Copie 1/2 ===== -->
+                <div class="page"
+                     style="width: 74mm; padding: 2mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.35; color: #000;">
+
+                    <!-- ===== Bandeau entete ===== -->
+                    <div style="text-align: center; font-weight: bold;">
+                        ================================
+                    </div>
+                    <div style="text-align: center; font-weight: bold; font-size: 14px; letter-spacing: 1px;">
+                        SOPROMER
+                    </div>
+                    <div t-if="doc.pos_session_id and doc.pos_session_id.config_id"
+                         style="text-align: center; font-weight: bold;">
+                        <t t-esc="doc.pos_session_id.config_id.name"/>
+                    </div>
+                    <div style="text-align: center; font-weight: bold;">
+                        ================================
+                    </div>
+
+                    <div style="height: 4px;"/>
+
+                    <!-- ===== Corps : type / piece / montant / motif ===== -->
+                    <div>
+                        Type     :
+                        <t t-esc="'SORTIE caisse' if doc.amount &lt; 0 else 'ENTREE caisse'"/>
+                    </div>
+                    <div>
+                        N° Piece :
+                        <t t-esc="doc.move_id.name or ('BSL/' + str(doc.id))"/>
+                    </div>
+                    <div>
+                        Montant  :
+                        <t t-esc="'{:,.2f}'.format(abs(doc.amount)).replace(',', ' ').replace('.', ',')"/> Ar
+                    </div>
+                    <div>
+                        Motif    :
+                        <t t-esc="doc.payment_ref.split('-', 2)[-1] if doc.payment_ref and '-' in doc.payment_ref else (doc.payment_ref or '-')"/>
+                    </div>
+
+                    <div style="text-align: center;">
+                        --------------------------------
+                    </div>
+
+                    <!-- ===== Tracabilite : session / date / caissier ===== -->
+                    <div t-if="doc.pos_session_id">
+                        Session  : <t t-esc="doc.pos_session_id.name"/>
+                    </div>
+                    <div>
+                        Date     :
+                        <span t-field="doc.create_date"
+                              t-options="{'format': 'dd/MM/yyyy HH:mm'}"/>
+                    </div>
+                    <div t-if="doc.pos_session_id and doc.pos_session_id.user_id">
+                        Caissier : <t t-esc="doc.pos_session_id.user_id.name"/>
+                    </div>
+
+                    <div style="text-align: center;">
+                        ================================
+                    </div>
+
+                    <div style="height: 4px;"/>
+
+                    <!-- ===== Zone signature ===== -->
+                    <div style="text-align: center; font-style: italic;">
+                        Signature
+                    </div>
+                    <div style="height: 28px;"/>
+                    <div style="text-align: center;">
+                        ================================
+                    </div>
+
+                    <div style="height: 6px;"/>
+
+                    <!-- ===== Marqueur copie 1/2 ===== -->
+                    <div style="text-align: center; font-size: 9px; color: #666;">
+                        Copie 1/2
+                    </div>
+
+                </div>
+
+                <!-- ===== Saut de page entre les 2 copies ===== -->
+                <p style="page-break-before: always;"/>
+
+                <!-- ===== Copie 2/2 (contenu identique) ===== -->
+                <div class="page"
+                     style="width: 74mm; padding: 2mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.35; color: #000;">
+
+                    <!-- ===== Bandeau entete ===== -->
+                    <div style="text-align: center; font-weight: bold;">
+                        ================================
+                    </div>
+                    <div style="text-align: center; font-weight: bold; font-size: 14px; letter-spacing: 1px;">
+                        SOPROMER
+                    </div>
+                    <div t-if="doc.pos_session_id and doc.pos_session_id.config_id"
+                         style="text-align: center; font-weight: bold;">
+                        <t t-esc="doc.pos_session_id.config_id.name"/>
+                    </div>
+                    <div style="text-align: center; font-weight: bold;">
+                        ================================
+                    </div>
+
+                    <div style="height: 4px;"/>
+
+                    <!-- ===== Corps : type / piece / montant / motif ===== -->
+                    <div>
+                        Type     :
+                        <t t-esc="'SORTIE caisse' if doc.amount &lt; 0 else 'ENTREE caisse'"/>
+                    </div>
+                    <div>
+                        N° Piece :
+                        <t t-esc="doc.move_id.name or ('BSL/' + str(doc.id))"/>
+                    </div>
+                    <div>
+                        Montant  :
+                        <t t-esc="'{:,.2f}'.format(abs(doc.amount)).replace(',', ' ').replace('.', ',')"/> Ar
+                    </div>
+                    <div>
+                        Motif    :
+                        <t t-esc="doc.payment_ref.split('-', 2)[-1] if doc.payment_ref and '-' in doc.payment_ref else (doc.payment_ref or '-')"/>
+                    </div>
+
+                    <div style="text-align: center;">
+                        --------------------------------
+                    </div>
+
+                    <!-- ===== Tracabilite : session / date / caissier ===== -->
+                    <div t-if="doc.pos_session_id">
+                        Session  : <t t-esc="doc.pos_session_id.name"/>
+                    </div>
+                    <div>
+                        Date     :
+                        <span t-field="doc.create_date"
+                              t-options="{'format': 'dd/MM/yyyy HH:mm'}"/>
+                    </div>
+                    <div t-if="doc.pos_session_id and doc.pos_session_id.user_id">
+                        Caissier : <t t-esc="doc.pos_session_id.user_id.name"/>
+                    </div>
+
+                    <div style="text-align: center;">
+                        ================================
+                    </div>
+
+                    <div style="height: 4px;"/>
+
+                    <!-- ===== Zone signature ===== -->
+                    <div style="text-align: center; font-style: italic;">
+                        Signature
+                    </div>
+                    <div style="height: 28px;"/>
+                    <div style="text-align: center;">
+                        ================================
+                    </div>
+
+                    <div style="height: 6px;"/>
+
+                    <!-- ===== Marqueur copie 2/2 ===== -->
+                    <div style="text-align: center; font-size: 9px; color: #666;">
+                        Copie 2/2
+                    </div>
+
+                </div>
+
+            </t>
+        </t>
+    </template>
+
+</odoo>
