@@ -3,11 +3,16 @@
     Copyright 2026 SOPROMER
     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 
-    v5 : Bouton "Imprimer" supprime
-    - "Confirmer" (natif, patche)  : valide + apercu PDF 2 copies (window.open)
-    Plus de bouton "Imprimer" separe — la logique d'apercu PDF est
-    integree directement dans "Confirmer". Plus de template OWL ticket
-    (SopromerCashMoveReceipt) puisque l'impression utilise le report PDF.
+    v5 : Bouton "Imprimer" supprime, code PDF integre dans Confirmer
+    v6 : Bouton "Cash In" (entree caisse) cache aux caissiers
+         (visible uniquement aux managers POS)
 -->
 <templates id="template" xml:space="preserve">
+
+    <t t-inherit="point_of_sale.CashMovePopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//button[contains(@t-on-click, &quot;'in'&quot;)]" position="attributes">
+            <attribute name="t-if">pos.user._role === 'manager'</attribute>
+        </xpath>
+    </t>
+
 </templates>

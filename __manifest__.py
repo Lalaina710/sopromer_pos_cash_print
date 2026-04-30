@@ -3,7 +3,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 {
     'name': 'POS Print Cash Move Ticket',
-    'version': '18.0.5.0.0',
+    'version': '18.0.6.0.0',
     'category': 'Point of Sale',
     'summary': 'Confirmer cash move = apercu PDF 2 copies (bouton Imprimer supprime)',
     'description': """

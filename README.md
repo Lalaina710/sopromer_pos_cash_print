@@ -110,6 +110,7 @@ Dans la POS :
 
 ## Historique de versions
 
+- **v18.0.6.0.0** (2026-04-30) — **Cash In caché aux caissiers** : seuls les managers POS voient le bouton Cash In. Caissiers voient uniquement Cash Out (default state.type='out'). Détection via `pos.user._role === 'manager'` côté OWL.
 - **v18.0.5.0.0** (2026-04-30) — **Bouton Imprimer supprimé**, logique PDF aperçu intégrée dans Confirmer. Suppression composant OWL `SopromerCashMoveReceipt` et méthode `confirmAndPrint()`. UX simplifiée pour éviter erreurs caissiers (double impression).
 - **v18.0.4.0.0** (2026-04-28) — Comportement scindé : Confirmer = impression directe via 2 modals HTML, Imprimer = aperçu PDF 2 copies. Composant OWL `SopromerCashMoveReceipt` restauré.
 - **v18.0.3.1.0** (2026-04-28) — Aperçu unique avec 2 copies dans 1 PDF.
