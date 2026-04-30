@@ -2,10 +2,10 @@
 # Copyright 2026 SOPROMER
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 {
-    'name': 'POS Print Cash Move Ticket (Hybride)',
-    'version': '18.0.4.0.4',
+    'name': 'POS Print Cash Move Ticket',
+    'version': '18.0.5.0.0',
     'category': 'Point of Sale',
-    'summary': 'Comportement scinde : Confirmer = 2 modals HTML rapides, Imprimer = apercu PDF 2 copies',
+    'summary': 'Confirmer cash move = apercu PDF 2 copies (bouton Imprimer supprime)',
     'description': """
 SOPROMER - POS Print Cash Move Ticket (v4 — Comportement scinde)
 ======================================================================
