@@ -110,6 +110,8 @@ Dans la POS :
 
 ## Historique de versions
 
+- **v18.0.6.1.1** (2026-05-01) — Fix syntaxe XML t-if avec parenthèses + `and` Python (compat OWL templating Odoo 18). Expression : `(pos.user._role || (pos.user.raw and pos.user.raw.role)) === 'manager'`.
+- **v18.0.6.1.0** (2026-05-01) — Fallback `pos.user.raw.role` quand `pos.user._role` undefined (timing init popup). Cohérent avec `sopromer_pos_balance_lock` v18.0.1.1.2. Évite que les admins voient le bouton Cash In caché si `_role` n'est pas posé au moment du rendu.
 - **v18.0.6.0.0** (2026-04-30) — **Cash In caché aux caissiers** : seuls les managers POS voient le bouton Cash In. Caissiers voient uniquement Cash Out (default state.type='out'). Détection via `pos.user._role === 'manager'` côté OWL.
 - **v18.0.5.0.0** (2026-04-30) — **Bouton Imprimer supprimé**, logique PDF aperçu intégrée dans Confirmer. Suppression composant OWL `SopromerCashMoveReceipt` et méthode `confirmAndPrint()`. UX simplifiée pour éviter erreurs caissiers (double impression).
 - **v18.0.4.0.0** (2026-04-28) — Comportement scindé : Confirmer = impression directe via 2 modals HTML, Imprimer = aperçu PDF 2 copies. Composant OWL `SopromerCashMoveReceipt` restauré.
