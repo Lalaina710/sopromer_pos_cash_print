@@ -27,7 +27,7 @@
          contenu. Marges minimales pour maximiser la zone utile.
          ================================================================ -->
     <record id="paperformat_cash_ticket" model="report.paperformat">
-        <field name="name">SOPROMER Cash Ticket 80mm</field>
+        <field name="name">Ticket caisse 80mm</field>
         <field name="format">custom</field>
         <field name="page_height">200</field>
         <field name="page_width">80</field>
@@ -50,7 +50,7 @@
          depuis le POS).
          ================================================================ -->
     <record id="action_report_cash_move_ticket" model="ir.actions.report">
-        <field name="name">Ticket Cash Move SOPROMER</field>
+        <field name="name">Ticket mouvement de caisse</field>
         <field name="model">account.bank.statement.line</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">sopromer_pos_cash_print.report_cash_move_ticket_doc</field>
@@ -80,6 +80,14 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
 
+                <!-- v6.1.2 : sans div.article, ir.actions.report._prepare_html
+                     ecrit pour wkhtmltopdf les seuls enfants de <main>, sans
+                     <head> ni meta charset : wkhtmltopdf lit alors le fichier
+                     en latin-1 ("N°" imprime "NA°", accents du nom de societe
+                     casses). Ce meta, premier enfant de <main>, est conserve
+                     par lxml et lu par wkhtmltopdf. Ne pas le retirer. -->
+                <meta t-if="doc_index == 0" charset="utf-8"/>
+
                 <!-- ===== Copie 1/2 ===== -->
                 <div class="page"
                      style="width: 74mm; padding: 2mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.35; color: #000;">
@@ -89,7 +97,7 @@
                         ================================
                     </div>
                     <div style="text-align: center; font-weight: bold; font-size: 14px; letter-spacing: 1px;">
-                        SOPROMER
+                        <t t-esc="(doc.company_id or doc.pos_session_id.config_id.company_id or res_company).name"/>
                     </div>
                     <div t-if="doc.pos_session_id and doc.pos_session_id.config_id"
                          style="text-align: center; font-weight: bold;">
@@ -107,7 +115,7 @@
                         <t t-esc="'SORTIE caisse' if doc.amount &lt; 0 else 'ENTREE caisse'"/>
                     </div>
                     <div>
-                        N° Piece :
+                        N° Pièce :
                         <t t-esc="doc.move_id.name or ('BSL/' + str(doc.id))"/>
                     </div>
                     <div>
@@ -172,7 +180,7 @@
                         ================================
                     </div>
                     <div style="text-align: center; font-weight: bold; font-size: 14px; letter-spacing: 1px;">
-                        SOPROMER
+                        <t t-esc="(doc.company_id or doc.pos_session_id.config_id.company_id or res_company).name"/>
                     </div>
                     <div t-if="doc.pos_session_id and doc.pos_session_id.config_id"
                          style="text-align: center; font-weight: bold;">
@@ -190,7 +198,7 @@
                         <t t-esc="'SORTIE caisse' if doc.amount &lt; 0 else 'ENTREE caisse'"/>
                     </div>
                     <div>
-                        N° Piece :
+                        N° Pièce :
                         <t t-esc="doc.move_id.name or ('BSL/' + str(doc.id))"/>
                     </div>
                     <div>
